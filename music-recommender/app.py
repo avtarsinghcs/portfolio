@@ -91,8 +91,7 @@ def cached_load(path):
 def cached_matrix(_df):
     return build_tfidf_matrix(_df)
 
-
-DATA_PATH = "tcc_ceds_music.csv"
+DATA_PATH = "https://drive.google.com/uc?id=1kMX-fyIhw5shzDW-c7hWsENA_3PiSTaQ"
 df        = cached_load(DATA_PATH)
 sample, cosine_sim = cached_matrix(df)
 
