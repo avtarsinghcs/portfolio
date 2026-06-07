@@ -29,7 +29,8 @@ def load_data(filepath: str) -> pd.DataFrame:
     if "drive.google.com" in filepath:
         local_path = "/tmp/music_data.csv"
         if not os.path.exists(local_path):
-            gdown.download(filepath, local_path, quiet=False, fuzzy=True)
+            file_id = "1kMX-fyIhw5shzDW-c7hWsENA_3PiSTaQ"
+        gdown.download(id=file_id, output=local_path, quiet=False)
         filepath = local_path
 
     df = pd.read_csv(filepath)
