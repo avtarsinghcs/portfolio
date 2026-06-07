@@ -5,8 +5,6 @@ All data loading, preprocessing, and recommendation logic.
 Imported by app.py (Streamlit UI).
 """
 
-import os
-import gdown
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -20,20 +18,14 @@ AUDIO_FEATURES = [
 ]
 
 # ── Load & preprocess ─────────────────────────────────────────────────────────
-def load_data(filepath: str) -> pd.DataFrame:
+def load_data(part1: str, part2: str) -> pd.DataFrame:
     """
-    Load the CSV, clean it, and create the 'combined_features' column.
-    If filepath is a Google Drive URL, downloads it first using gdown.
+    Load two CSV parts, combine them, clean and preprocess.
     """
-    # If it's a Google Drive URL, download it first
-    if "drive.google.com" in filepath:
-        local_path = "/tmp/music_data.csv"
-        if not os.path.exists(local_path):
-            file_id = "1kMX-fyIhw5shzDW-c7hWsENA_3PiSTaQ"
-        gdown.download(id=file_id, output=local_path, quiet=False)
-        filepath = local_path
+    df1 = pd.read_csv(part1)
+    df2 = pd.read_csv(part2)
+    df  = pd.concat([df1, df2], ignore_index=True)
 
-    df = pd.read_csv(filepath)
     df.drop(columns=["Unnamed: 0"], errors="ignore", inplace=True)
     df.dropna(subset=["artist_name", "track_name", "genre"], inplace=True)
     df.reset_index(drop=True, inplace=True)
@@ -60,11 +52,9 @@ def build_tfidf_matrix(df: pd.DataFrame):
     Capped at 10,000 rows so it runs fast in Streamlit.
     """
     sample = df.head(10_000).reset_index(drop=True)
-
     tfidf = TfidfVectorizer(stop_words="english")
     tfidf_matrix = tfidf.fit_transform(sample["combined_features"])
     cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
-
     return sample, cosine_sim
 
 
@@ -72,18 +62,14 @@ def build_tfidf_matrix(df: pd.DataFrame):
 def get_recommendations(song_title: str, df: pd.DataFrame,
                         cosine_sim: np.ndarray, top_n: int = 10,
                         genre_filter: str = "All") -> pd.DataFrame:
-    """
-    Content-based recommendation by song title (TF-IDF cosine similarity).
-    """
     idx_matches = df[df["track_name"].str.lower() == song_title.lower()].index
-
     if len(idx_matches) == 0:
         return pd.DataFrame()
 
     idx = idx_matches[0]
     sim_scores = list(enumerate(cosine_sim[idx]))
     sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
-    sim_scores = sim_scores[1:]  # exclude the song itself
+    sim_scores = sim_scores[1:]
 
     results = []
     for i, score in sim_scores:
@@ -110,10 +96,6 @@ def get_recommendations_by_mood(
     top_n: int = 10,
     genre_filter: str = "All"
 ) -> pd.DataFrame:
-    """
-    Recommend songs by all 6 audio feature values.
-    Each parameter is a float in [0, 1].
-    """
     existing_audio = [f for f in AUDIO_FEATURES if f in df.columns]
 
     feature_map = {
@@ -144,15 +126,10 @@ def get_recommendations_by_mood(
 
 # ── EDA helpers ───────────────────────────────────────────────────────────────
 def genre_distribution(df: pd.DataFrame) -> pd.Series:
-    """Top genres by song count."""
     return df["genre"].value_counts()
 
-
 def top_artists(df: pd.DataFrame, n: int = 10) -> pd.Series:
-    """Top N artists by number of songs."""
     return df.groupby("artist_name").size().sort_values(ascending=False).head(n)
 
-
 def audio_features_by_genre(df: pd.DataFrame, feature: str) -> pd.Series:
-    """Mean value of an audio feature grouped by genre."""
     return df.groupby("genre")[feature].mean().sort_values(ascending=False)
