@@ -90,8 +90,9 @@ def cached_load(path):
 @st.cache_data(show_spinner="Building similarity matrix…")
 def cached_matrix(_df):
     return build_tfidf_matrix(_df)
+df1 = pd.read_csv("music_part1.csv")
+df2 = pd.read_csv("music_part2.csv")
 
-DATA_PATH = "https://drive.google.com/uc?id=1kMX-fyIhw5shzDW-c7hWsENA_3PiSTaQ"
 df        = cached_load(DATA_PATH)
 sample, cosine_sim = cached_matrix(df)
 
